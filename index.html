@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<title>パズドラ風 フル＋セーブ復元</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<style>
+body{margin:0;background:#111;color:#fff;font-family:sans-serif;display:flex;justify-content:center;}
+#game{width:100%;max-width:420px;padding:10px;position:relative;}
+#board{display:grid;grid-template-columns:repeat(6,1fr);grid-template-rows:repeat(5,1fr);gap:4px;background:#222;padding:6px;border-radius:12px;}
+.orb{border-radius:50%;width:100%;height:100%;}
+.red{background:#f44}.blue{background:#48f}.green{background:#4f8}.yellow{background:#fd4}.purple{background:#b4f;}
+.bar{height:12px;background:#333;border-radius:8px;overflow:hidden;margin:4px 0;}
+.bar-inner{height:100%;background:linear-gradient(90deg,#0f0,#6f6);transition: width 0.3s;}
+.enemy .bar-inner{background:linear-gradient(90deg,#f00,#f88);}
+button{margin:4px;padding:8px;border:none;border-radius:8px;background:#444;color:#fff;}
+#log{min-height:1.2em;margin-top:6px;text-align:center;}
+#comboAnim{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);font-size:2rem;color:#ff0;opacity:0;pointer-events:none;}
+</style>
+</head>
+<body>
+<div id="game">
+<div>
+  HP<div class="bar"><div id="hp" class="bar-inner"></div></div>
+  ENEMY<div class="bar enemy"><div id="enemy" class="bar-inner"></div></div>
+</div>
+<div id="board"></div>
+<select id="friendSelect"></select>
+<div>
+  <button onclick="useSkill()">スキル</button>
+  <button onclick="gacha()">ガチャ</button>
+  <button onclick="deleteSave()">データ削除</button>
+</div>
+<div id="log"></div>
+<div id="comboAnim"></div>
+<script>
+const ROWS=5,COLS=6;
+const COLORS=["red","blue","green","yellow","purple"];
+let board=[],dragging=null;
+
+// 初期データ
+let saveDefault={stage:1,hp:100,maxHP:100,skill:"heal",friend:0};
+let save=JSON.parse(JSON.stringify(saveDefault));
+
+const friends=[
+  {name:"勇者", buff:"atk", rate:1.3},
+  {name:"回復士", buff:"heal", rate:1.3},
+  {name:"守護者", buff:"hp", rate:1.3}
+];
+
+let enemyHP=150,boost=false,combo=0;
+
+const boardEl=document.getElementById("board");
+const hpBar=document.getElementById("hp");
+const enemyBar=document.getElementById("enemy");
+const log=document.getElementById("log");
+const friendSelect=document.getElementById("friendSelect");
+const comboAnim=document.getElementById("comboAnim");
+
+function saveData(){localStorage.setItem("pazudora_save",JSON.stringify(save));}
+function loadData(){
+  const d=localStorage.getItem("pazudora_save");
+  if(d){
+    save=JSON.parse(d);
+  }else{
+    save=JSON.parse(JSON.stringify(saveDefault));
+    saveData();
+  }
+}
+function deleteSave(){
+  localStorage.removeItem("pazudora_save");
+  alert("データ削除しました");
+  save=JSON.parse(JSON.stringify(saveDefault));
+  enemyHP=150;
+  initBoard();updateBars();setupFriends();log.textContent="";
+}
+
+function setupFriends(){
+  friendSelect.innerHTML="";
+  friends.forEach((f,i)=>{const o=document.createElement("option");o.value=i;o.textContent=f.name;friendSelect.appendChild(o);});
+  friendSelect.value=save.friend;
+}
+friendSelect.onchange=()=>{save.friend=parseInt(friendSelect.value);saveData();};
+
+function randColor(){return COLORS[Math.floor(Math.random()*COLORS.length)];}
+
+function initBoard(){
+  board=[];boardEl.innerHTML="";
+  for(let r=0;r<ROWS;r++){
+    board[r]=[];
+    for(let c=0;c<COLS;c++){
+      const d=document.createElement("div");
+      const col=randColor();
+      d.className="orb "+col;
+      d.dataset.r=r;d.dataset.c=c;
+      board[r][c]=col;boardEl.appendChild(d);
+    }
+  }
+  updateBars();
+}
+
+function updateBars(){
+  hpBar.style.width=(save.hp/save.maxHP*100)+"%";
+  enemyBar.style.width=(enemyHP/(150+save.stage*30)*100)+"%";
+}
+
+function swap(a,b){[board[a.r][a.c],board[b.r][b.c]]=[board[b.r][b.c],board[a.r][a.c]];}
+function updateView(){for(let r=0;r<ROWS;r++)for(let c=0;c<COLS;c++)boardEl.children[r*COLS+c].className="orb "+board[r][c];}
+
+function showCombo(n){comboAnim.textContent="Combo x"+n;comboAnim.style.opacity=1;comboAnim.style.transform="translate(-50%,-50%) scale(1.5)";setTimeout(()=>{comboAnim.style.transition="all 0.5s";comboAnim.style.opacity=0;comboAnim.style.transform="translate(-50%,-50%) scale(1)";setTimeout(()=>{comboAnim.style.transition="";},500);},500);}
+
+function checkMatch(){
+  let del=[];
+  for(let r=0;r<ROWS;r++)
+    for(let c=0;c<COLS-2;c++){let v=board[r][c];if(v&&v===board[r][c+1]&&v===board[r][c+2]) del.push([r,c],[r,c+1],[r,c+2]);}
+  for(let c=0;c<COLS;c++)
+    for(let r=0;r<ROWS-2;r++){let v=board[r][c];if(v&&v===board[r+1][c]&&v===board[r+2][c]) del.push([r,c],[r+1,c],[r+2,c]);}
+  if(!del.length) return false;
+  combo++;showCombo(combo);
+  del.forEach(p=>board[p[0]][p[1]]=null);
+  setTimeout(drop,200);
+  return true;
+}
+
+function drop(){
+  for(let c=0;c<COLS;c++){for(let r=ROWS-1;r>=0;r--){if(!board[r][c]){for(let k=r-1;k>=0;k--){if(board[k][c]){board[r][c]=board[k][c];board[k][c]=null;break;}}if(!board[r][c]) board[r][c]=randColor();}}}
+  updateView();attack();
+}
+
+function attack(){
+  let dmg=20;
+  const f=friends[save.friend];
+  if(f.buff==="atk") dmg*=f.rate;
+  if(f.buff==="heal") save.hp=Math.min(save.maxHP,save.hp+10);
+  enemyHP-=dmg;
+  boost=false;
+  if(enemyHP<=0){save.stage++;enemyHP=150+save.stage*30;log.textContent="ステージ "+save.stage+" クリア！";}
+  else save.hp-=10;
+  if(save.hp<=0){alert("ゲームオーバー");save.stage=1;save.hp=save.maxHP;enemyHP=150;}
+  updateBars();saveData();
+}
+
+function useSkill(){
+  if(save.skill==="heal") save.hp=Math.min(save.maxHP,save.hp+40);
+  if(save.skill==="boost") boost=true;
+  if(save.skill==="nuke") enemyHP-=40;
+  updateBars();saveData();
+}
+
+function gacha(){
+  const r=Math.random();
+  if(r<0.33) save.skill="heal";
+  else if(r<0.66) save.skill="boost";
+  else save.skill="nuke";
+  log.textContent="新スキル獲得！";saveData();
+}
+
+boardEl.addEventListener("pointerdown",e=>{if(!e.target.classList.contains("orb"))return;dragging={r:+e.target.dataset.r,c:+e.target.dataset.c};});
+boardEl.addEventListener("pointerup",e=>{if(!dragging)return;if(!e.target.classList.contains("orb"))return;const r=+e.target.dataset.r,c=+e.target.dataset.c;if(Math.abs(r-dragging.r)+Math.abs(c-dragging.c)==1){swap(dragging,{r,c});updateView();if(!checkMatch()) swap(dragging,{r,c}),updateView();}dragging=null;});
+
+loadData();setupFriends();initBoard();updateBars();
+</script>
+</div>
+</body>
+</html>
