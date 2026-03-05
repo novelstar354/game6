@@ -2,108 +2,273 @@
 <html lang="ja">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>音楽ゲーム</title>
- <link rel="icon" href="https://d2o4rrq92x9csx.cloudfront.net/articles/7-7-3-2.webp" sizes="16×16" type="image/png" />  
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>RHYTHM GAME</title>
+<link rel="icon" href="https://d2o4rrq92x9csx.cloudfront.net/articles/7-7-3-2.webp" sizes="16×16" type="image/png" />  
 <style>
-  html, body {margin:0; padding:0; width:100%; height:100%;}
-  body {background:#111; color:#fff; font-family:sans-serif; overflow:hidden; display:flex; justify-content:center; align-items:center;}
-  #game {position: relative; width:100%; max-width:480px; height:100%; display:flex; flex-direction: column; align-items: center; justify-content: center; background: radial-gradient(circle at center, #222 0%, #000 100%);}
-  #noteArea {position: relative; width: 95%; height: 65%; border: 2px solid #555; background:#111; overflow:hidden; margin-top:20px; display:flex; justify-content: space-between; touch-action: none;}
-  .lane {flex:1; border-left:1px solid rgba(255,255,255,0.2); border-right:1px solid rgba(255,255,255,0.2); position: relative; display:flex; flex-direction: column; justify-content: flex-end; align-items: center; transition: background 0.1s;}
-  .lane span {position: absolute; bottom: 5px; color: rgba(255,255,255,0.3); font-size:calc(10px + 0.5vw); font-weight:bold;}
-  .note {position: absolute; width: calc(15%); height: calc(5vh); border-radius: 10px; background: linear-gradient(45deg, #0ff, #0f0); box-shadow:0 0 10px #0ff; display:flex; align-items:center; justify-content:center; font-weight:bold; color:#000; font-size:calc(12px + 0.5vw);}
-  .holdNote {position:absolute; width: calc(15%); border-radius:10px; background: linear-gradient(45deg, #ff0, #fa0); box-shadow:0 0 10px #ff0;}
-  #judgeLine {position: absolute; bottom: 10%; left:0; width:100%; height:5px; background:red; box-shadow:0 0 10px red;}
-  #scoreBoard {margin-top:5px; font-size:calc(14px + 0.5vw); text-align:center;}
-  .judgeText {position:absolute; font-size:calc(14px + 0.5vw); font-weight:bold; color:#fff; text-shadow:0 0 10px #fff; pointer-events:none;}
-  #difficultySelect {position:absolute; top:2%; left:50%; transform:translateX(-50%); font-size:calc(12px + 0.5vw);}
-  #difficultySelect button {margin:0 5px; padding:5px 10px; font-size:calc(12px + 0.5vw);}
-  #resultScreen {position:absolute; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.9); color:#fff; display:none; flex-direction: column; justify-content: center; align-items: center; font-size:calc(14px + 1vw);}
-  #resultScreen button {margin-top:20px; padding:10px 20px; font-size:calc(12px + 0.5vw);}
-  .activeLane {background: rgba(255,255,255,0.2);}
-footer {
-           padding: 30px;
-           text-align: center;
-           font-size: 0.85rem;
-           color: rgba(255,255,255,0.5);
-           border-top: 1px solid rgba(255,255,255,0.1);
-           margin-top: 60px;
-       }
+body{margin:0;font-family:sans-serif;background:#111;color:white;display:flex;flex-direction:column;align-items:center;user-select: none;
+  -webkit-user-select: none;}
+#game{position:relative;width:500px;height:700px;background:#222;margin-top:20px;border:3px solid cyan;overflow:hidden;box-shadow:0 0 20px #0ff;}
+.lane{position:absolute;bottom:0;width:20%;height:100%;border-left:1px solid rgba(255,255,255,0.2);border-right:1px solid rgba(255,255,255,0.2);box-sizing:border-box;transition:background 0.1s;}
+.lane.pressed{background:rgba(0,255,255,0.2);}
+.lane-key{position:absolute;bottom:5px;width:100%;text-align:center;font-weight:bold;font-size:18px;color:#0ff;}
+.lane-judge{position:absolute;bottom:25px;width:100%;text-align:center;font-size:18px;color:white;pointer-events:none;}
+.note{position:absolute;width:100%;border-radius:5px;text-align:center;font-weight:bold;box-shadow:0 0 5px #fff;}
+.tap{height:20px;background:linear-gradient(#0f0,#0a0);}
+.long{width:100%;background:linear-gradient(#0ff,#0aa);}
+.slide{width:100%;background:linear-gradient(#ff0,#aa0);}
+.longslide{width:100%;background:linear-gradient(#0ff,#ff0);border:2px solid #ff0;}
+.flick{width:100%;background:linear-gradient(#f00,#a00);display:flex;justify-content:center;align-items:center;color:white;font-weight:bold;}
+#hitline{position:absolute;bottom:50px;width:100%;height:5px;background:red;opacity:0.3;}
+#score{margin-top:10px;font-size:24px;}
+#comboEffect{position:absolute;top:40%;left:50%;transform:translate(-50%,-50%);font-size:48px;color:yellow;text-shadow:0 0 10px yellow;display:none;pointer-events:none;}
+@keyframes comboPop {
+  0% { transform: translate(-50%, -50%) scale(0.5); opacity:0; }
+  50% { transform: translate(-50%, -50%) scale(1.5); opacity:1; }
+  100% { transform: translate(-50%, -50%) scale(1); opacity:0; }
+}
+#comboEffect.show { display:block; animation: comboPop 0.8s ease-out forwards; }
+
+#result{position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.9);color:#fff;display:flex;flex-direction:column;justify-content:center;align-items:center;font-size:24px;display:none;}
+#result button{margin-top:20px;font-size:20px;padding:5px 10px;}
 </style>
 </head>
 <body>
+
+<h1>RHYTHM GAME</h1>
 <div id="game">
-  <div id="difficultySelect">
-    <button onclick="setDifficulty('easy')">Easy</button>
-    <button onclick="setDifficulty('normal')">Normal</button>
-    <button onclick="setDifficulty('hard')">Hard</button>
-  </div>
-  <div id="noteArea">
-    <div class="lane" data-key="d"><span>D</span></div>
-    <div class="lane" data-key="f"><span>F</span></div>
-    <div class="lane" data-key="j"><span>J</span></div>
-    <div class="lane" data-key="k"><span>K</span></div>
-    <div id="judgeLine"></div>
-  </div>
-  <div id="scoreBoard">
-    Score: <span id="score">0</span> | Combo: <span id="combo">0</span> | Max Combo: <span id="maxCombo">0</span>
-  </div>
+  <div id="hitline"></div>
+  <div id="comboEffect"></div>
 </div>
-<div id="resultScreen">
-  <div id="resultText"></div>
-  <button onclick="location.reload()">Restart</button>
+<div id="score">Score: 0</div>
+
+<div id="result">
+  <div id="finalScore"></div>
+  <div id="rank"></div>
+  <div id="maxCombo"></div>
+  <button onclick="restart()">リスタート</button>
 </div>
-<audio id="bgm" src="your-song.mp3"></audio>
-<audio id="bgmHard" src="your-fast-song.mp3"></audio>
+
 <script>
-const noteArea = document.getElementById('noteArea');
-const lanes = Array.from(document.querySelectorAll('.lane'));
-const scoreEl = document.getElementById('score');
-const comboEl = document.getElementById('combo');
-const maxComboEl = document.getElementById('maxCombo');
-const resultScreen = document.getElementById('resultScreen');
-const resultText = document.getElementById('resultText');
-const bgm = document.getElementById('bgm');
-const bgmHard = document.getElementById('bgmHard');
+const game=document.getElementById('game');
+const scoreDisplay=document.getElementById('score');
+const resultScreen=document.getElementById('result');
+const finalScoreDisplay=document.getElementById('finalScore');
+const rankDisplay=document.getElementById('rank');
+const maxComboDisplay=document.getElementById('maxCombo');
+const comboEffect=document.getElementById('comboEffect');
 
-let score = 0, combo = 0, maxCombo = 0;
-const notes = [], holdNotes = [], keyMap = ['d','f','j','k'];
-let noteSpeed = 3;
-let noteTiming = [];
-let startTime = null;
-let songDuration = 120;
-const laneWidth = noteArea.clientWidth / 4;
+const lanes=5;
+const laneKeys=['D','F','G','H','J'];
+let score=0, combo=0, maxCombo=0, paused=false, notes=[], gameEnded=false;
 
-function setDifficulty(level){
-  notes.length = 0; holdNotes.length = 0; score=0; combo=0; maxCombo=0;
-  scoreEl.textContent=score; comboEl.textContent=combo; maxComboEl.textContent=maxCombo;
-  noteTiming=[]; startTime=null; bgm.pause(); bgmHard.pause();
+// 判定ウィンドウ(px)
+const JUDGE_WINDOW={Perfect:6, Great:12, Good:20};
 
-  if(level==='easy'){ noteSpeed=2; songDuration=120; for(let i=1;i<=songDuration;i+=1) noteTiming.push({time:i,type:Math.random()<0.15?'hold':'tap'}); bgm.currentTime=0; bgm.play(); }
-  else if(level==='normal'){ noteSpeed=3; songDuration=165; for(let i=1;i<=songDuration;i+=0.5) noteTiming.push({time:i,type:Math.random()<0.2?'hold':'tap'}); bgm.currentTime=0; bgm.play(); }
-  else if(level==='hard'){ noteSpeed=4; songDuration=195; for(let i=1;i<=songDuration;i+=0.3) noteTiming.push({time:i,type:Math.random()<0.3?'hold':'tap'}); bgmHard.currentTime=0; bgmHard.play(); }
+// レーン作成＆判定表示
+let laneElements=[], laneJudges=[];
+for(let i=0;i<lanes;i++){
+  const laneDiv=document.createElement('div');
+  laneDiv.className='lane';
+  laneDiv.style.left=(i*20)+'%';
+  game.appendChild(laneDiv);
+  laneElements.push(laneDiv);
 
-  requestAnimationFrame(gameLoop);
-  setTimeout(showResult, songDuration*1000);
+  const keyDiv=document.createElement('div');
+  keyDiv.className='lane-key';
+  keyDiv.textContent=laneKeys[i];
+  laneDiv.appendChild(keyDiv);
+
+  const judgeDiv=document.createElement('div');
+  judgeDiv.className='lane-judge';
+  judgeDiv.textContent='-';
+  laneDiv.appendChild(judgeDiv);
+  laneJudges.push(judgeDiv);
 }
 
-function spawnNote(lane,type='tap'){ if(type==='tap'){ const note=document.createElement('div'); note.className='note'; note.style.left=(lane*laneWidth+laneWidth/2-30)+'px'; note.style.top='0px'; note.dataset.lane=lane; note.dataset.type='tap'; noteArea.appendChild(note); notes.push(note); } else { const hold=document.createElement('div'); hold.className='holdNote'; hold.style.left=(lane*laneWidth+laneWidth/2-30)+'px'; hold.style.top='0px'; hold.style.height='120px'; hold.dataset.lane=lane; hold.dataset.type='hold'; noteArea.appendChild(hold); holdNotes.push(hold); } }
-
-function gameLoop(timestamp){ if(!startTime) startTime=timestamp; const elapsed=(timestamp-startTime)/1000;
-  for(let i=0;i<noteTiming.length;i++){ if(!noteTiming[i].spawned && elapsed>=noteTiming[i].time){ const lane=Math.floor(Math.random()*4); spawnNote(lane,noteTiming[i].type); noteTiming[i].spawned=true; } }
-  for(let i=notes.length-1;i>=0;i--){ const note=notes[i]; note.style.top=(parseInt(note.style.top)+noteSpeed)+'px'; if(parseInt(note.style.top)>noteArea.clientHeight-80){ noteArea.removeChild(note); notes.splice(i,1); combo=0; comboEl.textContent=combo; } }
-  for(let i=holdNotes.length-1;i>=0;i--){ const hold=holdNotes[i]; hold.style.top=(parseInt(hold.style.top)+noteSpeed)+'px'; if(parseInt(hold.style.top)>noteArea.clientHeight-80){ noteArea.removeChild(hold); holdNotes.splice(i,1); combo=0; comboEl.textContent=combo; } }
-  requestAnimationFrame(gameLoop);
+// ノーツ作成
+function createNote(lane,type='tap',length=0,slideToLane=null,flickDir=null){
+  const note=document.createElement('div');
+  note.className='note '+type;
+  note.style.left=(lane*20)+'%';
+  note.style.bottom='700px';
+  if(type==='long'||type==='longslide') note.style.height=length+'px';
+  if(type==='slide'||type==='longslide') note.dataset.targetLane=slideToLane;
+  if(type==='flick') note.textContent=flickDir||'↑';
+  game.appendChild(note);
+  return {element:note,lane,type,length,slideToLane,flickDir,hold:false};
 }
 
-function showJudge(text,lane){ const judge=document.createElement('div'); judge.className='judgeText'; judge.textContent=text; judge.style.left=(lane*laneWidth+laneWidth/2-30)+'px'; judge.style.bottom='70px'; noteArea.appendChild(judge); setTimeout(()=>{noteArea.removeChild(judge);},500); }
-function showResult(){ bgm.pause(); bgmHard.pause(); resultText.innerHTML=`Final Score: ${score}<br>Max Combo: ${maxCombo}`; resultScreen.style.display='flex'; }
-function handleNoteHit(keyIndex){ lanes[keyIndex].classList.add('activeLane'); for(let i=0;i<notes.length;i++){ const note=notes[i]; if(parseInt(note.dataset.lane)===keyIndex){ const y=parseInt(note.style.top); const diff=Math.abs((noteArea.clientHeight-80)-y); if(diff<20){score+=100; combo+=1; maxCombo=Math.max(maxCombo,combo); scoreEl.textContent=score; comboEl.textContent=combo; maxComboEl.textContent=maxCombo; showJudge('Perfect',keyIndex); noteArea.removeChild(note); notes.splice(i,1); break; } else if(diff<40){score+=50; combo+=1; maxCombo=Math.max(maxCombo,combo); scoreEl.textContent=score; comboEl.textContent=combo; maxComboEl.textContent=maxCombo; showJudge('Good',keyIndex); noteArea.removeChild(note); notes.splice(i,1); break; } } } }
-document.addEventListener('keydown',(e)=>{ const idx=keyMap.indexOf(e.key); if(idx!==-1) handleNoteHit(idx); });
-document.addEventListener('keyup',(e)=>{ const idx=keyMap.indexOf(e.key); if(idx!==-1) lanes[idx].classList.remove('activeLane'); });
-noteArea.addEventListener('touchstart',(e)=>{ for(const t of e.touches){ const rect=noteArea.getBoundingClientRect(); const x=t.clientX-rect.left; const laneIndex=Math.floor(x/laneWidth); handleNoteHit(laneIndex); } });
-noteArea.addEventListener('touchend',(e)=>{ lanes.forEach(l=>l.classList.remove('activeLane')); });
+// ノーツ生成
+function spawnNote(){
+  if(gameEnded) return;
+  const lane=Math.floor(Math.random()*lanes);
+  const laneHasNote = notes.some(n=>n.lane===lane && parseFloat(n.element.style.bottom)>100);
+  if(laneHasNote) return;
+
+  const r=Math.random();
+  if(r<0.28) notes.push(createNote(lane,'tap'));
+  else if(r<0.43) notes.push(createNote(lane,'long',100));
+  else if(r<0.58) notes.push(createNote(lane,'longslide',100,(lane+1)%lanes));
+  else if(r<0.83) notes.push(createNote(lane,'slide',0,(lane+1)%lanes));
+  else if(r<0.93) notes.push(createNote(-1,'flick',0,null)); // 上入力フリック
+  else notes.push(createNote(lane,'flick',0,null));
+}
+
+// 判定関数
+function judge(offset){
+  offset=Math.abs(offset);
+  if(offset<=JUDGE_WINDOW.Perfect) return 'Perfect';
+  if(offset<=JUDGE_WINDOW.Great) return 'Great';
+  if(offset<=JUDGE_WINDOW.Good) return 'Good';
+  return 'Miss';
+}
+
+// コンボエフェクト
+function showComboEffect(){
+  comboEffect.textContent=combo+' COMBO!';
+  comboEffect.classList.add('show');
+  setTimeout(()=>{ comboEffect.classList.remove('show'); },800);
+}
+
+// ゲームループ
+function update(){
+  if(!paused && !gameEnded){
+    for(let i=notes.length-1;i>=0;i--){
+      const note=notes[i];
+      let bottom=parseFloat(note.element.style.bottom);
+      bottom-=5;
+      note.element.style.bottom=bottom.toFixed(1)+'px';
+
+      if((note.type==='long'||note.type==='longslide') && note.hold && bottom>30 && bottom<70){
+        score+=1; scoreDisplay.textContent='Score: '+score;
+      }
+
+      if(note.type==='slide'||note.type==='longslide'){
+        if(note.slideToLane!==null){
+          const targetX = note.slideToLane*20;
+          const currentX=parseFloat(note.element.style.left);
+          note.element.style.left = currentX + (targetX-currentX)*0.05 + '%';
+        }
+      }
+
+      if(bottom<30){
+        game.removeChild(note.element);
+        notes.splice(i,1);
+        if(note.lane>=0) laneJudges[note.lane].textContent='Miss';
+        combo=0;
+      }
+    }
+  }
+  requestAnimationFrame(update);
+}
+
+// 判定共通関数
+function hitLane(laneIndex){
+  laneElements[laneIndex].classList.add('pressed');
+  for(let i=0;i<notes.length;i++){
+    const note=notes[i];
+    const noteBottom=parseFloat(note.element.style.bottom);
+    const offset=noteBottom-50;
+    if(note.lane===laneIndex && noteBottom>30 && noteBottom<70){
+      const result=judge(offset);
+      laneJudges[laneIndex].textContent=result;
+      if(result==='Miss'){ combo=0; break; } else{ combo++; if(combo>maxCombo) maxCombo=combo; if(combo%50===0) showComboEffect(); }
+      if(result==='Perfect') score+=150;
+      else if(result==='Great') score+=120;
+      else if(result==='Good') score+=100;
+      scoreDisplay.textContent='Score: '+score;
+      if(note.type==='tap'){ game.removeChild(note.element); notes.splice(i,1); }
+      else if(note.type==='long'||note.type==='longslide'){ note.hold=true; }
+      break;
+    }
+  }
+}
+
+// キーボード押下
+document.addEventListener('keydown',(e)=>{
+  const key=e.key.toUpperCase();
+  if(key==='P'){ paused=!paused; return; }
+  if(key==='W'){
+    // 上フリック判定
+    for(let i=0;i<notes.length;i++){
+      const note=notes[i];
+      const noteBottom=parseFloat(note.element.style.bottom);
+      const offset=noteBottom-50;
+      if(note.type==='flick' && noteBottom>30 && noteBottom<70){
+        const result=judge(offset);
+        laneJudges[0].textContent=result;
+        if(result!=='Miss'){ combo++; if(combo>maxCombo) maxCombo=combo; if(combo%50===0) showComboEffect(); score+=150; scoreDisplay.textContent='Score: '+score; }
+        game.removeChild(note.element); notes.splice(i,1); break;
+      }
+    }
+    return;
+  }
+  const laneIndex=laneKeys.indexOf(key);
+  if(laneIndex!==-1) hitLane(laneIndex);
+});
+
+// キー離す
+document.addEventListener('keyup',(e)=>{
+  const key=e.key.toUpperCase();
+  const laneIndex=laneKeys.indexOf(key);
+  if(laneIndex!==-1) laneElements[laneIndex].classList.remove('pressed');
+  for(let i=0;i<notes.length;i++){
+    const note=notes[i];
+    if(note.lane===laneIndex && (note.type==='long'||note.type==='longslide')) note.hold=false;
+  }
+});
+
+// タッチ操作
+laneElements.forEach((laneEl,i)=>{
+  laneEl.addEventListener('touchstart',()=>hitLane(i));
+  laneEl.addEventListener('touchend',()=>{ laneEl.classList.remove('pressed'); 
+    for(let j=0;j<notes.length;j++){
+      const note=notes[j];
+      if(note.lane===i && (note.type==='long'||note.type==='longslide')) note.hold=false;
+    }
+  });
+});
+
+// ノーツ生成
+setInterval(spawnNote,1000);
+
+// ゲーム時間1分30秒で終了
+setTimeout(()=>{
+  gameEnded=true;
+  notes.forEach(n=>game.removeChild(n.element));
+  notes=[];
+  showResult();
+},90000);
+
+// リザルト表示
+function showResult(){
+  finalScoreDisplay.textContent='スコア: '+score;
+  maxComboDisplay.textContent='最大コンボ: '+maxCombo;
+  let r='E';
+  if(score>=4000) r='SSS';
+  else if(score>=3500) r='SS';
+  else if(score>=3000) r='S';
+  else if(score>=2500) r='A';
+  else if(score>=2000) r='B';
+  else if(score>=1500) r='C';
+  else if(score>=1000) r='D';
+  rankDisplay.textContent='ランク: '+r;
+  resultScreen.style.display='flex';
+}
+
+// リスタート
+function restart(){
+  notes.forEach(n=>game.removeChild(n.element));
+  notes = [];
+  score=0; combo=0; maxCombo=0;
+  scoreDisplay.textContent='Score: 0';
+  laneJudges.forEach(j=>j.textContent='-');
+  resultScreen.style.display='none';
+  gameEnded=false;
+}
+
+update();
 </script>
 </body>
 </html>
